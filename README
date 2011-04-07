@@ -1,0 +1,8 @@
+Automatically runs rsync on directories from local directories to a remote ones. Currently
+only works on Mac OS X (uses fslogger to detect file changes).
+
+It's advisable to use this with ssh muxing as setting up a new ssh connection is costly.
+Put this into your .ssh/config and keep a separate ssh connection open to the host:
+Host *
+  ControlMaster auto
+  ControlPath /home/<username>/.ssh/sockets/%h-%p-%r

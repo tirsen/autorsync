@@ -1,0 +1,14 @@
+excludes:
+- '*.iml'
+- 'prod'
+- 'data'
+- 'guides'
+- 'working_dir'
+- '.idea'
+- '.svn'
+- '*.swp'
+- '*.tmp'
+
+dirs:
+- from: '/Users/tirsen/src/google-wave-resources/samples/extensions/gadgets/playtube/'
+  to: 'tirsen.com:/home/tirsen/web/public/playtube'

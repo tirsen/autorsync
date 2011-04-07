@@ -2,23 +2,19 @@
 
 require 'open3'
 require 'set'
+require 'yaml'
 
-CONFIG = {
-  'dirs' => {
-    File.expand_path(File.dirname(__FILE__)) + '/' => '/home/tirsen/web/public/playtube'
-  },
-  'excludes' => [
-    'autorsync.rb',
-    '*.iml',
-    'prod',
-    'data',
-    'guides',
-    'working_dir',
-    '.idea',
-    '.svn'
-  ],
-  'host' => 'tirsen.com'
-}
+FSLOGGER=File.join(File.expand_path(File.dirname(__FILE__)), 'fslogger')
+
+def usage()
+  $stderr.puts " autorsync.rb <config file>"
+end
+
+if ARGV.length != 1
+  usage()
+end
+
+CONFIG = YAML.load(File.open(ARGV[0]))
 
 $cmds = Set.new
 
@@ -36,28 +32,28 @@ Thread.new do
   end
 end
 
-CONFIG['dirs'].each do |dir, dest|
-  puts "auto-rsyncing #{dir} to #{CONFIG['host']}:#{dest}"
+CONFIG['dirs'].each do |entry|
+  puts "auto-rsyncing #{entry['from']} to #{entry['to']}"
 end
 
-def rsync(dir, dest)
+def rsync(entry)
   excludes = CONFIG['excludes'].collect {|e| "--exclude=#{e}" }.join(' ')
-  "rsync -avz --no-perms #{dir} #{CONFIG['host']}:#{dest} #{excludes}"
+  "rsync -avz --no-perms #{entry['from']} #{entry['to']} #{excludes}"
 end
 
 # Start off by rscyncing everything.
-CONFIG['dirs'].each do |dir, dest|
-  $cmds.add(rsync(dir, dest))
+CONFIG['dirs'].each do |entry|
+  $cmds.add(rsync(entry))
 end
 
 # Then rsync only when something changes.
-Open3.popen3('sudo /Users/tirsen/bin/fslogger') do |stdin, stdout, stderr, wait_thr|
+Open3.popen3("sudo #{FSLOGGER}") do |stdin, stdout, stderr, wait_thr|
   stdout.each_line do |line|
-    CONFIG['dirs'].each do |dir, dest|
-      if line =~ /^ *FSE_ARG_STRING.*string = #{dir}(.*)$/
+    CONFIG['dirs'].each do |entry|
+      if line =~ /^ *FSE_ARG_STRING.*string = #{entry['from']}(.*)$/
         # TODO do a smaller rsync by using $1
         puts "file changed #{$1}"
-        $cmds.add(rsync(dir, dest))
+        $cmds.add(rsync(entry))
       end
     end
   end
